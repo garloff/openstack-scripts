@@ -1,0 +1,40 @@
+#!/bin/bash
+#tkn str
+export LANG=POSIX
+# For using under watch
+unset LINES COLUMNS
+extr()
+{
+	tkn="$1"; shift
+	val=$(echo "$@" | grep "\-$tkn \"" | sed "s@^.*\-$tkn \"\([^\"]*\)\".*\$@\1@")
+	if test -z "$val"; then
+		val=$(echo "$@" | grep "\-$tkn " | sed "s@^.*\-$tkn \([^ ]*\).*\$@\1@")
+	fi
+	eval $tkn="$val"
+}
+
+IPNEIGH=$(ip neighbor)
+while read pid uid stat tim rss size cmd; do
+	extr name "$cmd"
+	extr uuid "$cmd"
+	extr m "$cmd"
+	extr smp "$cmd"
+	extr smbios "$cmd"
+	mac=$(echo "$cmd" | grep 'mac=' | sed 's@^.*,mac=\([0-9a-f:]*\).*$@\1@g')
+	serial=$(echo "$smbios" | grep ',serial=' | sed 's/^.*,serial=\([^ ,]*\).*$/\1/')
+	spice=$(echo "$cmd" | grep 'spice port=' | sed 's/^.*spice port=\([0-9]*\).*$/\1/')
+	if test -z "$mac"; then
+		mac=$(echo "$cmd" | grep '"mac":' | sed 's@^.*"mac":"\([0-9a-f:]*\)".*$@\1@g')
+	fi
+	if test -n "$mac"; then
+		ipaddr=$(echo "$IPNEIGH" | grep "lladdr $mac" | cut -d " " -f1,3,3,3)
+	else
+		ipaddr=""
+	fi
+	#echo "$pid $tim ${name%%,*} $uuid $serial ${m%%,*} ${smp%%,*}"
+	m=${m#size=}
+	m2=${m%k}; if test "$m2" != "$m"; then m=$((m2/1024)); else m=$m2; fi
+	#rss=${rss%k}
+	printf "%6i %6i %8s %5i %6i %3i %s %s %s %s %s\n" $pid $uid $tim $((rss/1024)) ${m%%,*} ${smp%%,*} $uuid "${name%%,*}" "$serial" "$spice" "$mac $ipaddr"
+done < <(ps axwo pid,euid,stat,time,rss,size,command | grep 'qemu-\(sys\|kvm\)' | grep -v grep)
+
