@@ -125,6 +125,10 @@ def main():
     )
     if delete:
         stale_consumers = sorted(delete)
+    # Missing allocations
+    missing_consumers = sorted(
+        [c for c in live if not c in all_allocs]
+    )
 
     print("To clean:")
     for stale in stale_consumers:
@@ -132,6 +136,7 @@ def main():
 
     print(f"\n{'='*65}")
     print(f"Stale consumers to clean: {len(stale_consumers)}")
+    print(f"Missing consumers: {len(missing_consumers)}")
     print(f"{'='*65}\n")
 
     if not stale_consumers:
@@ -186,6 +191,10 @@ def main():
             else:
                 print(f"  FAIL: {cid} / {rp_id}")
                 fail += 1
+    
+    # TODO: Add missing allocations
+    if args.execute and len(missing_consumers):
+        print(f"  WARN: adding {len(missing_consumers)} missing allocations not yet supported.")
 
     print(f"\nDone. Deleted={ok}, Failed={fail}")
     if fail:

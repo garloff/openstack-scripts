@@ -37,3 +37,7 @@ end, it did not save much time, but I still avoided looking up a few things ...)
 You can run it safely (with admin credentials), as it defaults to `--dry-run`.
 
 * [cleanup-placement-allocation.py](cleanup-placement-allocation.py)
+
+Note that `nova-manage placement audit --verbose` does a similar thing
+(add `--delete` to really clean up). `nova-manage placement heal_allocations`
+can be used to add missing allocations.
